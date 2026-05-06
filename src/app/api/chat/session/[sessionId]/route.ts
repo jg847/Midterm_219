@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { ConversationRecord } from "@/application/ports/ConversationRepository";
+import type { ConversationRepository } from "@/application/ports/ConversationRepository";
 import { createConversationRepository } from "@/frameworks/repositories/conversation/createConversationRepository";
 import { createTelemetry } from "@/frameworks/telemetry/createTelemetry";
 import { isSessionMemoryEnabled } from "@/shared/config/sessionMemory";
@@ -15,6 +16,24 @@ function buildEmptySessionPayload(sessionId: string, resetRecommended: boolean) 
   };
 }
 
+async function loadConversationRepository(): Promise<ConversationRepository> {
+  try {
+    const runtimeModule = await import("@/app/api/chat/runtime");
+
+    if ("getConversationRepository" in runtimeModule && typeof runtimeModule.getConversationRepository === "function") {
+      return runtimeModule.getConversationRepository();
+    }
+
+    if ("getChatRuntime" in runtimeModule && typeof runtimeModule.getChatRuntime === "function") {
+      return runtimeModule.getChatRuntime().conversationRepository;
+    }
+  } catch {
+    // Fall through to the direct repository factory if runtime composition cannot be loaded.
+  }
+
+  return createConversationRepository();
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ sessionId: string }> },
@@ -26,9 +45,9 @@ export async function GET(
   }
 
   const telemetry = createTelemetry();
-  const conversationRepository = createConversationRepository();
 
   try {
+    const conversationRepository = await loadConversationRepository();
     const session = await conversationRepository.getSession(sessionId);
 
     if (!session) {
@@ -82,9 +101,9 @@ export async function DELETE(
   }
 
   const telemetry = createTelemetry();
-  const conversationRepository = createConversationRepository();
 
   try {
+    const conversationRepository = await loadConversationRepository();
     await conversationRepository.deleteSession(sessionId);
     telemetry.track({
       name: "chat.session.reset",
