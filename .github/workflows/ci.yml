@@ -24,7 +24,6 @@ jobs:
 
       - name: Lint (non-blocking)
         run: npm run lint
-        continue-on-error: true   # ✅ THIS FIXES YOUR FAILURE
 
       - name: Typecheck
         run: npm run typecheck

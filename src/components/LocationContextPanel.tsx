@@ -27,18 +27,26 @@ export function LocationContextPanel({
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedPreference = readLocationPreference();
-    if (!savedPreference) return;
+    let cancelled = false;
 
-    setRadiusMiles(savedPreference.radiusMiles);
-    setActiveLocation(savedPreference.formatted);
+    void Promise.resolve().then(() => {
+      const savedPreference = readLocationPreference();
+      if (!savedPreference || cancelled) return;
 
-    void resolveLocationContext({ query: savedPreference.formatted, radiusMiles: savedPreference.radiusMiles }).then(
-      (result) => {
-        if (!result.ok) return;
-        onResolved(result);
-      },
-    );
+      setRadiusMiles(savedPreference.radiusMiles);
+      setActiveLocation(savedPreference.formatted);
+
+      void resolveLocationContext({ query: savedPreference.formatted, radiusMiles: savedPreference.radiusMiles }).then(
+        (result) => {
+          if (!result.ok || cancelled) return;
+          onResolved(result);
+        },
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [onResolved]);
 
   async function submitManualLocation() {
