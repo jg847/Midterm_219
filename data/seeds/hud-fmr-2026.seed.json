@@ -1,0 +1,22 @@
+[
+  {
+    "location": "Newark, NJ",
+    "bedroomCount": 1,
+    "fmrMonthly": 1720
+  },
+  {
+    "location": "Newark, NJ",
+    "bedroomCount": 2,
+    "fmrMonthly": 2100
+  },
+  {
+    "location": "Jersey City, NJ",
+    "bedroomCount": 1,
+    "fmrMonthly": 2380
+  },
+  {
+    "location": "Houston, TX",
+    "bedroomCount": 1,
+    "fmrMonthly": 1280
+  }
+]

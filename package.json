@@ -6,21 +6,39 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:native": "playwright test -c playwright.native.config.ts",
+    "test:reliability": "vitest run src/test/reliabilityJourney.test.ts src/test/architectureBoundaries.test.ts src/test/duplicationGuard.test.ts",
+    "release:check": "npm run lint && npm run typecheck && npm run test && npm run test:reliability && npm run test:e2e && npm run test:e2e:native && npm run build",
+    "release:quick": "npm run lint && npm run typecheck && npm run test:reliability",
+    "seed:retrieval": "tsx scripts/seedRetrievalDocs.ts"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.42.0",
+    "@upstash/redis": "^1.37.0",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.51.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }
