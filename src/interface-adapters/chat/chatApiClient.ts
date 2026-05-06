@@ -278,6 +278,27 @@ async function* readEventStream(response: Response): AsyncGenerator<ChatStreamEv
   }
 }
 
+async function readJsonSafely<T>(response: Response): Promise<T | null> {
+  try {
+    if (typeof response.text === "function") {
+      const text = await response.text();
+      if (!text.trim()) {
+        return null;
+      }
+
+      return JSON.parse(text) as T;
+    }
+
+    if (typeof response.json === "function") {
+      return (await response.json()) as T;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function sendChatMessage(request: SendChatRequest): Promise<ChatApiResponse> {
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -285,7 +306,11 @@ export async function sendChatMessage(request: SendChatRequest): Promise<ChatApi
     body: JSON.stringify(request),
   });
 
-  const payload = (await response.json()) as ChatApiResponse;
+  const payload = await readJsonSafely<ChatApiResponse>(response);
+  if (!payload) {
+    return { ok: false, error: response.ok ? "Unexpected server response shape" : "Chat service is temporarily unavailable. Please retry." };
+  }
+
   if (!response.ok && payload.ok) {
     return { ok: false, error: "Unexpected server response shape" };
   }
@@ -336,7 +361,11 @@ export async function hydrateChatSession(sessionId: string): Promise<ChatSession
     method: "GET",
   });
 
-  const payload = (await response.json()) as ChatSessionApiResponse;
+  const payload = await readJsonSafely<ChatSessionApiResponse>(response);
+  if (!payload) {
+    return { ok: false, error: "Unable to restore the previous conversation right now." };
+  }
+
   if (!response.ok && payload.ok) {
     return { ok: false, error: "Unexpected server response shape" };
   }
@@ -349,7 +378,11 @@ export async function resetChatSession(sessionId: string): Promise<ResetChatSess
     method: "DELETE",
   });
 
-  const payload = (await response.json()) as ResetChatSessionResponse;
+  const payload = await readJsonSafely<ResetChatSessionResponse>(response);
+  if (!payload) {
+    return { ok: false, error: "Unable to reset the current conversation right now." };
+  }
+
   if (!response.ok && payload.ok) {
     return { ok: false, error: "Unexpected server response shape" };
   }

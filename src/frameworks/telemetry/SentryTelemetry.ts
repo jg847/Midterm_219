@@ -4,13 +4,17 @@ import type { TelemetryEvent, TelemetryPort } from "@/application/ports/Telemetr
 
 export class SentryTelemetry implements TelemetryPort {
   track(event: TelemetryEvent): void {
-    Sentry.withScope((scope) => {
-      scope.setLevel("info");
-      for (const [key, value] of Object.entries(event.attributes)) {
-        scope.setExtra(key, value);
-      }
+    try {
+      Sentry.withScope((scope) => {
+        scope.setLevel("info");
+        for (const [key, value] of Object.entries(event.attributes)) {
+          scope.setExtra(key, value);
+        }
 
-      Sentry.captureMessage(`[telemetry] ${event.name}`);
-    });
+        Sentry.captureMessage(`[telemetry] ${event.name}`);
+      });
+    } catch (error) {
+      console.warn("[telemetry] sentry sink failure", error);
+    }
   }
 }

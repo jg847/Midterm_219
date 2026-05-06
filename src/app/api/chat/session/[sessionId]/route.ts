@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { getChatRuntime } from "@/app/api/chat/runtime";
 import type { ConversationRecord } from "@/application/ports/ConversationRepository";
+import { createConversationRepository } from "@/frameworks/repositories/conversation/createConversationRepository";
+import { createTelemetry } from "@/frameworks/telemetry/createTelemetry";
 import { isSessionMemoryEnabled } from "@/shared/config/sessionMemory";
 
 function buildEmptySessionPayload(sessionId: string, resetRecommended: boolean) {
@@ -24,13 +25,14 @@ export async function GET(
     return NextResponse.json({ ok: true, payload: buildEmptySessionPayload(sessionId, false) });
   }
 
-  const runtime = getChatRuntime();
+  const telemetry = createTelemetry();
+  const conversationRepository = createConversationRepository();
 
   try {
-    const session = await runtime.conversationRepository.getSession(sessionId);
+    const session = await conversationRepository.getSession(sessionId);
 
     if (!session) {
-      runtime.telemetry.track({
+      telemetry.track({
         name: "chat.session.recovered",
         attributes: { sessionId, reason: "missing_or_expired" },
       });
@@ -38,7 +40,7 @@ export async function GET(
       return NextResponse.json({ ok: true, payload: buildEmptySessionPayload(sessionId, true) });
     }
 
-    runtime.telemetry.track({
+    telemetry.track({
       name: "chat.session.loaded",
       attributes: { sessionId, messageCount: session.messages.length },
     });
@@ -54,7 +56,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    runtime.telemetry.track({
+    telemetry.track({
       name: "chat.conversation.read_failed",
       attributes: {
         sessionId,
@@ -79,18 +81,19 @@ export async function DELETE(
     return NextResponse.json({ ok: true });
   }
 
-  const runtime = getChatRuntime();
+  const telemetry = createTelemetry();
+  const conversationRepository = createConversationRepository();
 
   try {
-    await runtime.conversationRepository.deleteSession(sessionId);
-    runtime.telemetry.track({
+    await conversationRepository.deleteSession(sessionId);
+    telemetry.track({
       name: "chat.session.reset",
       attributes: { sessionId },
     });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    runtime.telemetry.track({
+    telemetry.track({
       name: "chat.conversation.write_failed",
       attributes: {
         sessionId,
